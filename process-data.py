@@ -812,7 +812,7 @@ def queryDatabase(flight: pd.DataFrame = None)->pd.DataFrame:
     try:
 
         # Connect to the database
-        dbconn = pg.connect("dbname=jeff")
+        dbconn = pg.connect("dbname=legacy")
 
         if dbconn:
 
