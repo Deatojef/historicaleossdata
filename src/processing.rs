@@ -24,8 +24,31 @@ fn round(val: f64, places: i32) -> f64 {
 
 /// Core processing pipeline, equivalent to Python's process_df() + processThread()
 pub fn process_df(flightname: &str, df: DataFrame) -> Result<ProcessedFlight> {
-    // Drop rows that are all null
-    let df = df.drop_nulls::<String>(None)?;
+    // Detect burst packets BEFORE dropping nulls, since burst status packets
+    // lack position/altitude data and would be removed by drop_nulls
+    let burst_re = Regex::new(r"(?i)DETECTED.*BURST|DETECTED COMMANDED RELEASE").unwrap();
+    let alt_re = Regex::new(r"(?i)(\d+)\s*ft").unwrap();
+    let detected_burst = {
+        let raw_col = df.column("raw")?.str()?;
+        let mut detected_altitudes: Vec<i64> = Vec::new();
+        for opt_raw in raw_col.into_iter() {
+            if let Some(raw) = opt_raw {
+                if burst_re.is_match(raw) {
+                    if let Some(caps) = alt_re.captures(raw) {
+                        if let Ok(alt) = caps[1].parse::<i64>() {
+                            detected_altitudes.push(alt);
+                        }
+                    }
+                }
+            }
+        }
+        detected_altitudes.into_iter().max()
+    };
+
+    // Drop rows where essential position/time columns are null
+    let essential_cols: Vec<String> = vec!["altitude_ft", "latitude", "longitude", "packettime"]
+        .into_iter().map(String::from).collect();
+    let df = df.drop_nulls(Some(&essential_cols))?;
 
     let nrows = df.height();
     if nrows == 0 {
@@ -51,25 +74,6 @@ pub fn process_df(flightname: &str, df: DataFrame) -> Result<ProcessedFlight> {
         .collect();
     let position_packet = position_packet.with_name("position_packet".into());
     df.with_column(position_packet.into_column())?;
-
-    // Detect burst packets
-    let raw_col = df.column("raw")?.str()?;
-    let burst_re = Regex::new(r"(?i)DETECTED.*BURST|DETECTED COMMANDED RELEASE").unwrap();
-    let alt_re = Regex::new(r"(?i)(\d+)\s*ft").unwrap();
-
-    let mut detected_altitudes: Vec<i64> = Vec::new();
-    for opt_raw in raw_col.into_iter() {
-        if let Some(raw) = opt_raw {
-            if burst_re.is_match(raw) {
-                if let Some(caps) = alt_re.captures(raw) {
-                    if let Ok(alt) = caps[1].parse::<i64>() {
-                        detected_altitudes.push(alt);
-                    }
-                }
-            }
-        }
-    }
-    let detected_burst = detected_altitudes.into_iter().max();
 
     // Get unique callsigns
     let callsigns: Vec<String> = df

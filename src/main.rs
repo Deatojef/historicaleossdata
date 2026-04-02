@@ -92,9 +92,33 @@ fn process_flight(input: &FlightInput, config: &Config) -> Result<()> {
         .with_context(|| format!("Processing failed for {flightname}"))?;
 
     // Build consolidated DataFrame (ascent + descent)
+    // Align columns before vstacking — curve fit columns may only exist in one phase
     let consolidated = if processed.descent.height() > 0 {
-        let mut frames = processed.ascent.clone();
-        frames.vstack_mut(&processed.descent)?;
+        let mut ascent = processed.ascent.clone();
+        let mut descent = processed.descent.clone();
+
+        // Add missing columns as null f64 to each frame
+        let desc_cols: Vec<PlSmallStr> = descent.get_column_names().into_iter().cloned().collect();
+        for col_name in &desc_cols {
+            if ascent.column(col_name.as_str()).is_err() {
+                let null_col = Column::new(col_name.clone(), vec![Option::<f64>::None; ascent.height()]);
+                ascent.with_column(null_col)?;
+            }
+        }
+        let asc_cols: Vec<PlSmallStr> = ascent.get_column_names().into_iter().cloned().collect();
+        for col_name in &asc_cols {
+            if descent.column(col_name.as_str()).is_err() {
+                let null_col = Column::new(col_name.clone(), vec![Option::<f64>::None; descent.height()]);
+                descent.with_column(null_col)?;
+            }
+        }
+
+        // Reorder descent columns to match ascent
+        let col_order = asc_cols;
+        let descent = descent.select(col_order)?;
+
+        let mut frames = ascent;
+        frames.vstack_mut(&descent)?;
         frames.sort(["packettime"], SortMultipleOptions::default())?
     } else {
         processed.ascent.clone()
