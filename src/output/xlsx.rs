@@ -2,6 +2,8 @@ use anyhow::Result;
 use polars::prelude::*;
 use rust_xlsxwriter::{Format, Workbook};
 
+use super::reorder_columns;
+
 /// Write flight data to Excel with Metadata, Ascent, and Descent sheets
 pub fn write_xlsx(
     metadata_json: &serde_json::Value,
@@ -17,14 +19,18 @@ pub fn write_xlsx(
     // Metadata sheet
     write_metadata_sheet(&mut workbook, metadata_json)?;
 
+    // Reorder columns to standard order
+    let ascent = reorder_columns(ascent)?;
+    let descent = reorder_columns(descent)?;
+
     // Ascent sheet
     if ascent.height() > 0 {
-        write_df_sheet(&mut workbook, "Ascent", ascent, &datetime_fmt)?;
+        write_df_sheet(&mut workbook, "Ascent", &ascent, &datetime_fmt)?;
     }
 
     // Descent sheet
     if descent.height() > 0 {
-        write_df_sheet(&mut workbook, "Descent", descent, &datetime_fmt)?;
+        write_df_sheet(&mut workbook, "Descent", &descent, &datetime_fmt)?;
     }
 
     workbook.save(path)?;

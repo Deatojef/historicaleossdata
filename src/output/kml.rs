@@ -35,7 +35,10 @@ pub fn write_kml(flightname: &str, ascent: &DataFrame, descent: &DataFrame, path
     let secs = (flight_secs - hrs as f64 * 3600.0 - mins as f64 * 60.0) as i64;
     let flighttime = format!("{hrs}hrs {mins}mins {secs}secs");
 
-    // <Document>
+    // <Document> (outer wrapper)
+    writer.write_event(Event::Start(BytesStart::new("Document")))?;
+
+    // Inner Document named after the flight
     writer.write_event(Event::Start(BytesStart::new("Document")))?;
     write_simple_element(&mut writer, "name", flightname)?;
 
@@ -44,7 +47,7 @@ pub fn write_kml(flightname: &str, ascent: &DataFrame, descent: &DataFrame, path
         r#"<![CDATA[
     <h1>{flightname}</h1>
     <table style="width: 100%;" cellpadding=0 cellspacing=0 border=0>
-    <tr><td style="border: solid 1px black;border-bottom: 0; padding: 10px;"><strong>Launch Local Date/Time</strong></td><td style=" padding: 10px;border: solid 1px black;border-bottom: 0; border-left: 0;">{}</td></tr>
+    <tr><td style="border: solid 1px black;border-bottom: 0; padding: 10px;"><strong>Launch Date/Time (UTC)</strong></td><td style=" padding: 10px;border: solid 1px black;border-bottom: 0; border-left: 0;">{}</td></tr>
     <tr><td style="border: solid 1px black;border-bottom: 0; padding: 10px;"><strong>Flight Duration</strong></td><td style=" padding: 10px;border: solid 1px black;border-bottom: 0; border-left: 0; ">{flighttime}</td></tr>
     <tr><td style="border: solid 1px black;border-bottom: 0; padding: 10px;"><strong>Down Range Distance</strong></td><td style=" padding: 10px;border: solid 1px black;border-bottom: 0; border-left: 0; ">{:.1}mi ({:.1}km)</td></tr>
     <tr><td style="border: solid 1px black; padding: 10px;"><strong>Approx. Burst Altitude</strong></td><td style=" padding: 10px;border: solid 1px black; border-left: 0; ">{:.0}ft ({:.1}m)</td></tr>
@@ -83,7 +86,7 @@ pub fn write_kml(flightname: &str, ascent: &DataFrame, descent: &DataFrame, path
     write_poi_point(&mut writer, "Launch", &launch, "ff00aaff", &format!(
         r#"<h1>Launch</h1>
     <table style="width: 100%;" cellpadding=0 cellspacing=0 border=0>
-    <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Local Time</strong></td><td style="border: solid 1px black;border-bottom: 0; border-left: 0; padding: 10px;">{}</td></tr>
+    <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Time (UTC)</strong></td><td style="border: solid 1px black;border-bottom: 0; border-left: 0; padding: 10px;">{}</td></tr>
     <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Altitude</strong></td><td style="border: solid 1px black;border-left: 0; border-bottom: 0; padding: 10px;">{:.0}ft ({:.1}m)</td></tr>
     <tr><td style="padding: 10px; border: solid 1px black;"><strong>Coordinates</strong></td><td style="border: solid 1px black; border-left: 0; padding: 10px;">{:.8}, {:.8}</td></tr>
     </table>"#,
@@ -94,7 +97,7 @@ pub fn write_kml(flightname: &str, ascent: &DataFrame, descent: &DataFrame, path
     write_poi_point(&mut writer, "Landing", &landing, "ff00aaff", &format!(
         r#"<h1>Landing</h1>
     <table style="width: 100%;" cellpadding=0 cellspacing=0 border=0>
-    <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Local Time</strong></td><td style="border: solid 1px black;border-left: 0; border-bottom: 0; padding: 10px;">{}</td></tr>
+    <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Time (UTC)</strong></td><td style="border: solid 1px black;border-left: 0; border-bottom: 0; padding: 10px;">{}</td></tr>
     <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Altitude</strong></td><td style="border: solid 1px black;border-bottom: 0; border-left: 0; padding: 10px;">{:.0}ft ({:.1}m)</td></tr>
     <tr><td style="padding: 10px; border: solid 1px black;"><strong>Coordinates</strong></td><td style="border: solid 1px black; border-left: 0; padding: 10px;">{:.8}, {:.8}</td></tr>
     </table>"#,
@@ -105,7 +108,7 @@ pub fn write_kml(flightname: &str, ascent: &DataFrame, descent: &DataFrame, path
     write_poi_point(&mut writer, &format!("Burst {:.0}ft", burst.altitude_ft), &burst, "ff00ffff", &format!(
         r#"<h1>Burst: {:.0}ft</h1>
     <table style="width: 100%;" cellpadding=0 cellspacing=0 border=0>
-    <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Local Time</strong></td><td style="border: solid 1px black;border-left: 0; border-bottom: 0; padding: 10px;">{}</td></tr>
+    <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Time (UTC)</strong></td><td style="border: solid 1px black;border-left: 0; border-bottom: 0; padding: 10px;">{}</td></tr>
     <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Altitude</strong></td><td style="border: solid 1px black;border-left: 0; border-bottom: 0; padding: 10px;">{:.0}ft ({:.1}m)</td></tr>
     <tr><td style="padding: 10px; border: solid 1px black;"><strong>Coordinates</strong></td><td style="border: solid 1px black; border-left: 0; padding: 10px;">{:.8}, {:.8}</td></tr>
     </table>"#,
@@ -153,7 +156,7 @@ pub fn write_kml(flightname: &str, ascent: &DataFrame, descent: &DataFrame, path
         write_poi_point(&mut writer, &name, &rd, "ff006400", &format!(
             r#"<h1>Airflow Transitioning from {re_name}</h1>
         <table style="width: 100%;" cellpadding=0 cellspacing=0 border=0>
-        <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Local Time</strong></td><td style="border: solid 1px black;border-left: 0; border-bottom: 0; padding: 10px;">{t_str}</td></tr>
+        <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Time (UTC)</strong></td><td style="border: solid 1px black;border-left: 0; border-bottom: 0; padding: 10px;">{t_str}</td></tr>
         <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Altitude</strong></td><td style="border: solid 1px black;border-left: 0; border-bottom: 0; padding: 10px;">{a_ft:.0}ft ({a_m:.1}m)</td></tr>
         <tr><td style="padding: 10px; border: solid 1px black;"><strong>Coordinates</strong></td><td style="border: solid 1px black; border-left: 0; padding: 10px;">{la:.8}, {lo:.8}</td></tr>
         </table>"#
@@ -161,6 +164,7 @@ pub fn write_kml(flightname: &str, ascent: &DataFrame, descent: &DataFrame, path
     }
 
     writer.write_event(Event::End(BytesEnd::new("Folder")))?; // Points of Interest
+    writer.write_event(Event::End(BytesEnd::new("Document")))?; // Root flight Document
     writer.write_event(Event::End(BytesEnd::new("Document")))?;
     writer.write_event(Event::End(BytesEnd::new("kml")))?;
 
@@ -370,7 +374,7 @@ fn write_altitude_waypoints<W: std::io::Write>(
         write_poi_point(writer, &name, &rd, color, &format!(
             r#"<h1>Waypoint</h1>
         <table style="width: 100%;" cellpadding=0 cellspacing=0 border=0>
-        <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Local Time</strong></td><td style="border: solid 1px black;border-left: 0; border-bottom: 0; padding: 10px;">{t_str}</td></tr>
+        <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Time (UTC)</strong></td><td style="border: solid 1px black;border-left: 0; border-bottom: 0; padding: 10px;">{t_str}</td></tr>
         <tr><td style="padding: 10px; border: solid 1px black;border-bottom: 0;"><strong>Altitude</strong></td><td style="border: solid 1px black;border-left: 0; border-bottom: 0; padding: 10px;">{a_ft:.0}ft ({a_m:.1}m)</td></tr>
         <tr><td style="padding: 10px; border: solid 1px black;"><strong>Coordinates</strong></td><td style="border: solid 1px black; border-left: 0; padding: 10px;">{la:.8}, {lo:.8}</td></tr>
         </table>"#

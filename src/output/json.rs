@@ -4,9 +4,11 @@ use serde_json::{Map, Value, json};
 use std::fs;
 
 use crate::models::FlightMetadata;
+use super::reorder_columns;
 
 /// Write flight data as nested JSON (metadata + packets array)
 pub fn write_json(metadata: &FlightMetadata, df: &DataFrame, path: &str) -> Result<()> {
+    let df = reorder_columns(df)?;
     // Serialize metadata to a JSON map
     let meta_val = serde_json::to_value(metadata)?;
     let mut root = match meta_val {
@@ -15,7 +17,7 @@ pub fn write_json(metadata: &FlightMetadata, df: &DataFrame, path: &str) -> Resu
     };
 
     // Convert DataFrame rows to JSON array
-    let packets = df_to_json_array(df)?;
+    let packets = df_to_json_array(&df)?;
     root.insert("packets".to_string(), Value::Array(packets));
 
     let json_str = serde_json::to_string(&root)?;
