@@ -18,17 +18,7 @@ cargo run --release -- --flight EOSS-391 --output-type parquet  # single flight,
 cargo run --release -- --dbname eosstracker            # use production DB
 ```
 
-Requires a local PostgreSQL database with the `packets` table (schema in `legacy-database.sql`). The database must have PostGIS extensions (`geometry` types). Database name defaults to `legacy` (configurable via `--dbname` or `EOSS_DBNAME` env var). Uses `rayon` for parallel flight processing.
-
-### Python (legacy, kept for reference)
-
-```bash
-python3 process-data.py
-```
-
-### Python Dependencies (legacy only)
-
-pandas, numpy, scipy, matplotlib, psycopg2, pytz, simplekml, xlsxwriter
+Requires a local PostgreSQL database with the `packets` table (schema in `packets-table-reference.sql`). The database must have PostGIS extensions (`geometry` types). Database name defaults to `legacy` (configurable via `--dbname` or `EOSS_DBNAME` env var). Uses `rayon` for parallel flight processing.
 
 ## Architecture
 
@@ -43,10 +33,6 @@ Multi-module design in `src/`:
 - **physics.rs** — Haversine distance, air density, polynomial fitting (nalgebra SVD), VMR degree selection
 - **output/** — CSV (Polars CsvWriter), JSON (serde_json), Parquet (Polars ParquetWriter, replaces pickle), XLSX (rust_xlsxwriter), KML (quick-xml), metadata consolidation
 
-### Python Implementation (legacy)
-
-**Single-script design** — all logic lives in `process-data.py`.
-
 ### Data Flow
 
 1. `main()` reads `flightlist.json` (flight metadata: beacons, dates, weights, parachute info)
@@ -60,7 +46,7 @@ Multi-module design in `src/`:
 
 ### Output Directory Structure
 
-All outputs go to `output/` subdirectories: `csv/`, `json/`, `parquet/` (Rust) or `pkl/` (Python), `png/` (Python only), `xlsx/`, `kml/`
+All outputs go to `output/` subdirectories: `csv/`, `json/`, `parquet/`, `xlsx/`, `kml/`
 
 ### Key Domain Concepts
 

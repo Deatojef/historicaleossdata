@@ -27,5 +27,3 @@ target
 
 # skip local items
 .env
-claude-session.txt
-output
